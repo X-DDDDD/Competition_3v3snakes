@@ -22,6 +22,7 @@ def main(args):
     print(f'model episode: {args.model_episode}')
     print(f'save interval: {args.save_interval}')
 
+    # 自己搭了一个环境
     env = make(args.game_name, conf=None)
 
     num_agents = env.n_player
@@ -37,19 +38,20 @@ def main(args):
 
     act_dim = env.get_action_dim()
     print(f'action dimension: {act_dim}')
-    obs_dim = 26
+    obs_dim = 26 # ???
     print(f'observation dimension: {obs_dim}')
 
     torch.manual_seed(args.seed)
 
     # 定义保存路径
-    run_dir, log_dir = make_logpath(args.game_name, args.algo)
+    run_dir, log_dir = make_logpath(args.game_name, args.algo) # 返回如下类似路径
+    # 'E:/npu/RL/jidi/Competition_3v3snakes-master/rl_trainer/models/snakes_3v3/run9'
     writer = SummaryWriter(str(log_dir))
-    save_config(args, log_dir)
+    save_config(args, log_dir) # 保存文件之类的操作
 
     model = DDPG(obs_dim, act_dim, ctrl_agent_num, args)
 
-    if args.load_model:
+    if args.load_model: # 
         load_dir = os.path.join(os.path.dirname(run_dir), "run" + str(args.load_model_run))
         model.load_model(load_dir, episode=args.load_model_run_episode)
 
@@ -64,8 +66,9 @@ def main(args):
         # However, when evaluation in Jidi, each agent get its own state, like state[agent_index]: dict()
         # more details refer to https://github.com/jidiai/Competition_3v3snakes/blob/master/run_log.py#L68
         # state: list() ; state[0]: dict()
+        # 上面是说拿到的状态不是全部?
         state_to_training = state[0]
-
+        state_to_training_2 = state[1]
         # ======================= feature engineering =======================
         # since all snakes play independently, we choose first three snakes for training.
         # Then, the trained model can apply to other agents. ctrl_agent_index -> [0, 1, 2]
@@ -81,6 +84,10 @@ def main(args):
             # ================================== inference ========================================
             # For each agents i, select and execute action a:t,i = a:i,θ(s_t) + Nt
             logits = model.choose_action(obs)
+            #print(logits)
+            # [[0.24867341 0.32742625 0.28782326 0.13607702]
+            #  [0.18935412 0.38909212 0.28460413 0.1369496 ]
+            #  [0.1865356  0.39618272 0.25432238 0.1629593 ]]
 
             # ============================== add opponent actions =================================
             # we use rule-based greedy agent here. Or, you can switch to random agent.
@@ -150,7 +157,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--game_name', default="snakes_3v3", type=str)
     parser.add_argument('--algo', default="ddpg", type=str, help="bicnet/ddpg")
-    parser.add_argument('--max_episodes', default=50000, type=int)
+    parser.add_argument('--max_episodes', default=10, type=int)
     parser.add_argument('--episode_length', default=200, type=int)
     parser.add_argument('--output_activation', default="softmax", type=str, help="tanh/softmax")
 
